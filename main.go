@@ -34,7 +34,12 @@ func main() {
 	borderLayout := container.NewBorder(urlInput, nil, nil, nil, imageContainer)
 
 	urlInput.OnSubmitted = func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return
+		}
 		urlInput.TypedShortcut(selectAll)
+		imageContainer.RemoveAll()
 		img := loadImage(s)
 		if img == nil {
 			return
@@ -51,7 +56,7 @@ func main() {
 		w.Canvas().Focus(urlInput)
 	})
 	w.Resize(fyne.Size{
-		Width: 600, Height: 600,
+		Width: 500, Height: 600,
 	})
 	w.ShowAndRun()
 }
@@ -88,4 +93,5 @@ func showErrorMessage(window fyne.Window, err error) {
 	errDialog := dialog.NewError(err, window)
 	// Show the error dialog
 	errDialog.Show()
+	errDialog.Refresh()
 }
