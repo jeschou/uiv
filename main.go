@@ -10,9 +10,10 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/webp"
+	_ "github.com/chai2010/webp"
 	"image"
+	"image/color"
+	"image/draw"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -24,7 +25,13 @@ import (
 var selectAll = &fyne.ShortcutSelectAll{}
 var w fyne.Window
 
+func init() {
+
+}
+
 func main() {
+	//os.Setenv("FYNE_FONT", "/System/Library/Fonts/PingFang.ttc")
+	//defer os.Unsetenv("FYNE_FONT")
 	myApp := app.New()
 	w = myApp.NewWindow("URL Image Viewer")
 	urlInput := widget.NewEntry()
@@ -32,6 +39,9 @@ func main() {
 
 	imageContainer := container.NewStack()
 	borderLayout := container.NewBorder(urlInput, nil, nil, nil, imageContainer)
+
+	bg := canvas.NewImageFromImage(createBg())
+	bg.FillMode = canvas.ImageFillStretch
 
 	urlInput.OnSubmitted = func(s string) {
 		s = strings.TrimSpace(s)
@@ -46,7 +56,11 @@ func main() {
 		}
 		image0 := canvas.NewImageFromImage(img)
 		image0.FillMode = canvas.ImageFillContain
+		image1 := canvas.NewImageFromImage(createMosaic(image0.Image.Bounds(), 8))
+		image1.FillMode = canvas.ImageFillContain
 		imageContainer.RemoveAll()
+		imageContainer.Add(bg)
+		imageContainer.Add(image1)
 		imageContainer.Add(image0)
 	}
 	w.SetContent(borderLayout)
@@ -59,6 +73,30 @@ func main() {
 		Width: 500, Height: 600,
 	})
 	w.ShowAndRun()
+}
+
+func createBg() image.Image {
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	greyCell := &image.Uniform{C: color.NRGBA{R: 128, G: 128, B: 128, A: 128}}
+	draw.Draw(img, img.Bounds(), greyCell, image.Point{}, draw.Src)
+	return img
+}
+
+func createMosaic(bounds image.Rectangle, size int) image.Image {
+	img := image.NewRGBA(bounds)
+
+	draw.Draw(img, img.Bounds(), image.White, image.Point{}, draw.Src)
+	greyCell := &image.Uniform{C: color.NRGBA{R: 128, G: 128, B: 128, A: 128}}
+	X := bounds.Dx()/size + 1
+	Y := bounds.Dy()/size + 1
+	for x := 0; x < X; x++ {
+		for y := 0; y < Y; y++ {
+			if x%2 == y%2 {
+				draw.Draw(img, image.Rect(x*size, y*size, x*size+size, y*size+size), greyCell, image.Point{}, draw.Src)
+			}
+		}
+	}
+	return img
 }
 
 func loadImage(str string) (img image.Image) {
